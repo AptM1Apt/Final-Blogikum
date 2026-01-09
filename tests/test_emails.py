@@ -23,9 +23,9 @@ def test_gitignore():
 
 
 def test_email_backend_settings():
-    assert hasattr(
-        settings, "EMAIL_BACKEND"
-    ), "Убедитесь, что в проекте задана настройка `EMAIL_BACKEND`."
+    assert hasattr(settings, "EMAIL_BACKEND"), (
+        "Убедитесь, что в проекте задана настройка `EMAIL_BACKEND`."
+    )
     assert EmailBackend.__module__ in settings.EMAIL_BACKEND, (
         "Убедитесь, что файловый бэкенд для отправки e-mail подключен с"
         " помощью настройки `EMAIL_BACKEND`."
