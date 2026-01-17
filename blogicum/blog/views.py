@@ -8,27 +8,45 @@ from django.core.paginator import Paginator
 from django.db.models import Count
 
 from .models import Post, Category, Comment, User
-from .forms import PostForm, CommentForm, CustomUserCreationForm, UserUpdateForm
+from .forms import PostForm, CommentForm, \
+    CustomUserCreationForm, UserUpdateForm
 
 
 # Константы
 POSTS_PER_PAGE = 10
 
 
-def index(request):
-    """Главная страница со списком публикаций."""
-    post_list = (
-        Post.objects.filter(
-            is_published=True, category__is_published=True, pub_date__lte=timezone.now()
-        )
-        .select_related("author", "location", "category")
-        .annotate(comment_count=Count("comments"))
-        .order_by("-pub_date")
+def annotate_posts_with_comment_count(queryset):
+    """Добавляет к queryset постов количество комментариев."""
+    return queryset.annotate(comment_count=Count("comments"))
+
+
+def paginate_queryset(request, queryset, per_page=POSTS_PER_PAGE):
+    """Применяет пагинацию к queryset и возвращает page_obj."""
+    paginator = Paginator(queryset, per_page)
+    page_number = request.GET.get("page")
+    return paginator.get_page(page_number)
+
+
+def filter_published_posts(queryset):
+    """Фильтрует посты по опубликованности."""
+    return queryset.filter(
+        is_published=True,
+        category__is_published=True,
+        pub_date__lte=timezone.now()
     )
 
-    paginator = Paginator(post_list, POSTS_PER_PAGE)
-    page_number = request.GET.get("page")
-    page_obj = paginator.get_page(page_number)
+
+def index(request):
+    """Главная страница со списком публикаций."""
+    post_list = filter_published_posts(Post.objects)
+    post_list = (
+        post_list.select_related("author", "location", "category")
+        .order_by("-pub_date")
+    )
+    post_list = annotate_posts_with_comment_count(post_list)
+
+    page_obj = paginate_queryset(request, post_list)
 
     context = {"page_obj": page_obj}
     return render(request, "blog/index.html", context)
@@ -41,11 +59,7 @@ def post_detail(request, post_id):
     # Если пользователь не автор - проверяем доступность поста
     if request.user != post.author:
         post = get_object_or_404(
-            Post.objects.filter(
-                is_published=True,
-                category__is_published=True,
-                pub_date__lte=timezone.now(),
-            ),
+            filter_published_posts(Post.objects),
             pk=post_id,
         )
 
@@ -62,20 +76,18 @@ def post_detail(request, post_id):
 
 def category_posts(request, category_slug):
     """Публикации категории с пагинацией."""
-    category = get_object_or_404(Category, slug=category_slug, is_published=True)
+    category = get_object_or_404(Category, 
+                                 slug=category_slug, 
+                                 is_published=True)
 
+    post_list = filter_published_posts(Post.objects.filter(category=category))
     post_list = (
-        Post.objects.filter(
-            category=category, is_published=True, pub_date__lte=timezone.now()
-        )
-        .select_related("author", "location", "category")
-        .annotate(comment_count=Count("comments"))
+        post_list.select_related("author", "location", "category")
         .order_by("-pub_date")
     )
+    post_list = annotate_posts_with_comment_count(post_list)
 
-    paginator = Paginator(post_list, POSTS_PER_PAGE)
-    page_number = request.GET.get("page")
-    page_obj = paginator.get_page(page_number)
+    page_obj = paginate_queryset(request, post_list)
 
     context = {
         "category": category,
@@ -93,22 +105,15 @@ def profile(request, username):
         post_list = Post.objects.filter(author=profile_user)
     else:
         # Для остальных - только опубликованные
-        post_list = Post.objects.filter(
-            author=profile_user,
-            is_published=True,
-            category__is_published=True,
-            pub_date__lte=timezone.now(),
+        post_list = filter_published_posts(
+            Post.objects.filter(author=profile_user)
         )
 
-    post_list = (
-        post_list.select_related("category", "location")
-        .annotate(comment_count=Count("comments"))
-        .order_by("-pub_date")
+    post_list = annotate_posts_with_comment_count(
+        post_list.select_related("category", "location").order_by("-pub_date")
     )
 
-    paginator = Paginator(post_list, POSTS_PER_PAGE)
-    page_number = request.GET.get("page")
-    page_obj = paginator.get_page(page_number)
+    page_obj = paginate_queryset(request, post_list)
 
     context = {
         "profile": profile_user,
@@ -155,6 +160,7 @@ class PostUpdateView(LoginRequiredMixin, UpdateView):
     template_name = "blog/create.html"
     pk_url_kwarg = "post_id"
 
+
     def dispatch(self, request, *args, **kwargs):
         post = self.get_object()
         if post.author != request.user:
@@ -179,7 +185,9 @@ class PostDeleteView(LoginRequiredMixin, DeleteView):
         return super().dispatch(request, *args, **kwargs)
 
     def get_success_url(self):
-        return reverse("blog:profile", kwargs={"username": self.request.user.username})
+        return reverse(
+            "blog:profile", 
+            kwargs={"username": self.request.user.username})
 
 
 @login_required
