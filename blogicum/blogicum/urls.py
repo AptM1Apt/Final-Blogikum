@@ -18,4 +18,7 @@ urlpatterns = [
     path(
         "auth/registration/", blog_views.RegistrationView.as_view(), name="registration"
     ),
+    
 ]
+
+urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

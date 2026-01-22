@@ -1,9 +1,9 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
-from django.contrib.auth.mixins import LoginRequiredMixin
 from django.views.generic import CreateView, UpdateView, DeleteView
 from django.urls import reverse_lazy, reverse
 from django.utils import timezone
+from django.utils.decorators import method_decorator
 from django.core.paginator import Paginator
 from django.db.models import Count
 
@@ -76,9 +76,11 @@ def post_detail(request, post_id):
 
 def category_posts(request, category_slug):
     """Публикации категории с пагинацией."""
-    category = get_object_or_404(Category, 
-                                 slug=category_slug, 
-                                 is_published=True)
+    category = get_object_or_404(
+        Category, 
+        slug=category_slug, 
+        is_published=True
+    )
 
     post_list = filter_published_posts(Post.objects.filter(category=category))
     post_list = (
@@ -137,7 +139,8 @@ def edit_profile(request):
     return render(request, "blog/user.html", context)
 
 
-class PostCreateView(LoginRequiredMixin, CreateView):
+@method_decorator(login_required, name='dispatch')
+class PostCreateView(CreateView):
     """Создание новой публикации."""
 
     model = Post
@@ -152,7 +155,8 @@ class PostCreateView(LoginRequiredMixin, CreateView):
         return reverse("blog:profile", kwargs={"username": self.request.user.username})
 
 
-class PostUpdateView(LoginRequiredMixin, UpdateView):
+@method_decorator(login_required, name='dispatch')
+class PostUpdateView(UpdateView):
     """Редактирование публикации."""
 
     model = Post
@@ -160,9 +164,8 @@ class PostUpdateView(LoginRequiredMixin, UpdateView):
     template_name = "blog/create.html"
     pk_url_kwarg = "post_id"
 
-
     def dispatch(self, request, *args, **kwargs):
-        post = self.get_object()
+        post = get_object_or_404(Post, pk=self.kwargs[self.pk_url_kwarg])
         if post.author != request.user:
             return redirect("blog:post_detail", post_id=post.pk)
         return super().dispatch(request, *args, **kwargs)
@@ -171,7 +174,8 @@ class PostUpdateView(LoginRequiredMixin, UpdateView):
         return reverse("blog:post_detail", kwargs={"post_id": self.object.pk})
 
 
-class PostDeleteView(LoginRequiredMixin, DeleteView):
+@method_decorator(login_required, name='dispatch')
+class PostDeleteView(DeleteView):
     """Удаление публикации."""
 
     model = Post
@@ -179,7 +183,7 @@ class PostDeleteView(LoginRequiredMixin, DeleteView):
     pk_url_kwarg = "post_id"
 
     def dispatch(self, request, *args, **kwargs):
-        post = self.get_object()
+        post = get_object_or_404(Post, pk=self.kwargs[self.pk_url_kwarg])
         if post.author != request.user:
             return redirect("blog:post_detail", post_id=post.pk)
         return super().dispatch(request, *args, **kwargs)
@@ -187,7 +191,8 @@ class PostDeleteView(LoginRequiredMixin, DeleteView):
     def get_success_url(self):
         return reverse(
             "blog:profile", 
-            kwargs={"username": self.request.user.username})
+            kwargs={"username": self.request.user.username}
+        )
 
 
 @login_required

@@ -24,7 +24,7 @@ TEMPLATES_DIR = BASE_DIR / "templates"
 SECRET_KEY = "django-insecure-q-azg(n$i(fol=g413nxde7_pp6-w@g4nme2n$aqpx5ps==ty5"
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = True
 
 ALLOWED_HOSTS = [
     "localhost",
@@ -132,7 +132,6 @@ STATICFILES_DIRS = [BASE_DIR / "static/"]
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-STATICFILES_DIRS = [BASE_DIR.parent / "static"]
 
 MEDIA_ROOT = BASE_DIR / "media"
 MEDIA_URL = "/media/"

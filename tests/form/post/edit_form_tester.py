@@ -38,10 +38,13 @@ class EditPostFormTester(PostFormTester):
         **kwargs,
     ):
         try:
-            super().__init__(response, *args, ModelAdapter=ModelAdapter, **kwargs)
+            super().__init__(
+                response, *args, ModelAdapter=ModelAdapter, **kwargs
+            )
         except FormTagMissingException as e:
             raise AssertionError(
-                "Убедитесь, что на страницу редактирования поста передаётся форма."
+                "Убедитесь, что на страницу редактирования поста передаётся"
+                " форма."
             ) from e
 
     @property
@@ -66,7 +69,8 @@ class EditPostFormTester(PostFormTester):
             return super().textarea_tag
         except TextareaTagMissingException as e:
             raise AssertionError(
-                "Убедитесь, что в форме редактирования поста есть элемент `textarea`."
+                "Убедитесь, что в форме редактирования поста есть элемент"
+                " `textarea`."
             ) from e
 
     def _validate(self):
@@ -74,7 +78,8 @@ class EditPostFormTester(PostFormTester):
             super()._validate()
         except FormTagMissingException as e:
             raise AssertionError(
-                "Убедитесь, что на страницу редактирования поста передаётся форма."
+                "Убедитесь, что на страницу редактирования поста передаётся"
+                " форма."
             ) from e
         except FormMethodException as e:
             raise AssertionError(
@@ -98,10 +103,13 @@ class EditPostFormTester(PostFormTester):
             return super().try_create_item(form, qs, submitter, assert_created)
         except FormValidationException as e:
             raise AssertionError(
-                f"При редактировании поста возникает ошибка:\n{type(e).__name__}: {e}"
+                "При редактировании поста возникает ошибка:\n"
+                f"{type(e).__name__}: {e}"
             ) from e
 
-    def test_unlogged_cannot_create(self, form: BaseForm, qs: QuerySet) -> None:
+    def test_unlogged_cannot_create(
+        self, form: BaseForm, qs: QuerySet
+    ) -> None:
         try:
             super().test_unlogged_cannot_create(form, qs)
         except ItemCreatedException as e:
@@ -118,7 +126,8 @@ class EditPostFormTester(PostFormTester):
             return super().test_edit_item(updated_form, qs, item_adapter)
         except UnauthorizedEditException:
             raise AssertionError(
-                "Убедитесь, что пользователь не может редактировать чужие посты."
+                "Убедитесь, что пользователь не может редактировать чужие"
+                " посты."
             )
         except UnauthenticatedEditException:
             raise AssertionError(
@@ -138,7 +147,9 @@ class EditPostFormTester(PostFormTester):
     def redirect_error_message(
         self, by_user: str, redirect_to_page: Union[TitledUrlRepr, str]
     ) -> str:
-        redirect_to_page_repr = self.get_redirect_to_page_repr(redirect_to_page)
+        redirect_to_page_repr = self.get_redirect_to_page_repr(
+            redirect_to_page
+        )
         return (
             "Убедитесь, что при отправке формы редактирования поста"
             f" {by_user} он перенаправляется на {redirect_to_page_repr}."

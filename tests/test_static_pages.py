@@ -1,6 +1,6 @@
 def test_static_pages_as_cbv():
     try:
-        pass
+        from pages import urls
     except Exception as e:
         raise AssertionError(
             "Убедитесь, что в файле `pages/urls.py` нет ошибок. При его"
@@ -13,7 +13,7 @@ def test_static_pages_as_cbv():
             "Убедитесь, что в файле `pages/urls.py` задан список urlpatterns."
         )
     try:
-        pass
+        from pages.urls import app_name
     except Exception:
         raise AssertionError(
             "Убедитесь, что в файле `pages/urls.py` определена глобальная"
